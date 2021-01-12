@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @ChannelHandler.Sharable
-//@Service("protocolServerHandler")
+@Service("protocolServerHandler")
 public class ProtocolServerHandler extends SimpleChannelInboundHandler<Object> {
 	@Autowired
 	MessageProcessService messageProcessService;

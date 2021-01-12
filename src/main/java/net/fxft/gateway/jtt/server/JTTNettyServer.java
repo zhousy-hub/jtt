@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  *
  */
 @Slf4j
-//@Service("jt808TcpNettyServer")
+@Service("jt808TcpNettyServer")
 public class JTTNettyServer{
 	@Autowired
 	SystemConfig systemConfig;
@@ -77,7 +77,7 @@ public class JTTNettyServer{
 			// f.channel().closeFuture().sync();
 			return true;
 		} catch(Exception ex) {
-			log.error("",ex);
+			log.error(">>>>>>>>>连接出错",ex);
 		}
 		return false;
 	}
@@ -89,17 +89,17 @@ public class JTTNettyServer{
 			// f.channel().closeFuture().sync();
 			f.channel().close();
 		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
+			log.error("", ex);
 		}
 		try {
 			workerGroup.shutdownGracefully();
 		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
+			log.error("", ex);
 		}
 		try {
 			bossGroup.shutdownGracefully();
 		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
+			log.error("", ex);
 		}
 	}
 
