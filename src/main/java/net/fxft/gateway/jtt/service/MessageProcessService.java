@@ -23,7 +23,6 @@ public class MessageProcessService {
 
     public void processMsg(GpsMessage tm) {
         num++;
-        System.out.println(tm.toString());
         kafkaTemplate.send("jtt",tm.getPlateNo(),tm.getData());
     }
 
