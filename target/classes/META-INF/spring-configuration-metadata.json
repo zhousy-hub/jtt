@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "jtt",
+      "type": "net.fxft.gateway.jtt.config.SystemConfig",
+      "sourceType": "net.fxft.gateway.jtt.config.SystemConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "jtt.port",
+      "type": "java.lang.Integer",
+      "sourceType": "net.fxft.gateway.jtt.config.SystemConfig",
+      "defaultValue": 0
+    }
+  ],
+  "hints": []
+}
