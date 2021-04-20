@@ -2,11 +2,16 @@ package net.fxft.gateway.jtt.vo;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import com.ltmonitor.jt808.protocol.MyBuffer;
 import lombok.Data;
+import net.fxft.common.util.StringUtil;
 import net.fxft.gateway.jtt.util.ByteUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class GpsMessage {
@@ -261,6 +266,57 @@ public class GpsMessage {
         this.data = data;
     }
 
+
+
+    private Date getTime(int year,int month,int day,int time){
+        //System.out.println("year = [" + year + "], month = [" + month + "], day = [" + day + "], time = [" + time + "]");
+        int hour = time/1000/3600;
+        int minute = (time/1000%3600)/60;
+        int second = (time/1000%3600)%60;
+        String d = String.format("%s-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
+        return DateUtil.parse(d, DatePattern.NORM_DATETIME_FORMAT);
+    }
+
+    private List<String> getTime(Date sendTime){
+        //System.out.println("year = [" + year + "], month = [" + month + "], day = [" + day + "], time = [" + time + "]");
+        List<String> data = new ArrayList<>();
+        String dateStr = DateUtil.format(sendTime,DatePattern.NORM_DATETIME_FORMAT);
+        if (dateStr.contains(" ")){
+            String dateTimeStr[] = dateStr.split(" ");
+            if (dateTimeStr[0].contains("-")){
+                String dateValues[] = dateTimeStr[0].split("-");
+                data.addAll(Arrays.asList(dateValues));
+            }
+            if (dateTimeStr[1].contains(":")){
+                String timeValues[] = dateTimeStr[1].split(":");
+                int time = Integer.valueOf(timeValues[0]) * 1000 * 3600
+                        +  Integer.valueOf(timeValues[1]) * 1000 * 60
+                        +  Integer.valueOf(timeValues[2]) * 1000 ;
+                data.add("" + time);
+            }
+            return data;
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取校验和
+     *
+     * @param data
+     * @param pos
+     * @param len
+     * @return
+     */
+    private byte GetCheckXor(byte[] data, int pos, int len) {
+        byte A = 0;
+        for (int i = pos; i < len; i++) {
+            A ^= data[i];
+        }
+        return A;
+    }
+
+
     /**
      * 读取字节流，解析出数据
      * @param msg
@@ -269,8 +325,8 @@ public class GpsMessage {
         int pos =0;
         data = new byte[msg.length];
         System.arraycopy(msg,0,data,0,msg.length);
-
-        setCode(ByteUtil.byteToShort(msg,pos));
+        int code = ByteUtil.byteToShort(msg,pos);
+        setCode(code);
         pos+=2;
         int len = msg[pos] & 0xFF;
         pos+=1;
@@ -309,36 +365,11 @@ public class GpsMessage {
         pos+=8;
         setType(msg[pos]);
         pos+=1;
-        byte ext = msg[pos];
-        pos+=1;
-        byte xor = GetCheckXor(msg,3,len+2);
-      //  System.out.println("["+time.toString()+"] "+ plateNo +": "+latitude +"-"+longitude);
-        //System.out.println(toString());
-    }
-
-    private Date getTime(int year,int month,int day,int time){
-        //System.out.println("year = [" + year + "], month = [" + month + "], day = [" + day + "], time = [" + time + "]");
-        int hour = time/1000/3600;
-        int minute = (time/1000%3600)/60;
-        int second = (time/1000%3600)%60;
-        String d = String.format("%s-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
-        return DateUtil.parse(d, DatePattern.NORM_DATETIME_FORMAT);
-    }
-
-    /**
-     * 获取校验和
-     *
-     * @param data
-     * @param pos
-     * @param len
-     * @return
-     */
-    private byte GetCheckXor(byte[] data, int pos, int len) {
-        byte A = 0;
-        for (int i = pos; i < len; i++) {
-            A ^= data[i];
-        }
-        return A;
+        //byte ext = msg[pos];
+        // setExt(ext);
+       // pos+=1;
+       // byte xor = GetCheckXor(msg,3,len+2);
+        //setXor(xor);
     }
 
     /**
@@ -346,7 +377,50 @@ public class GpsMessage {
      * @return
      */
     public byte[] WriteToBytes(){
-        return null;
+        MyBuffer buff = new MyBuffer();
+        buff.putShort(code);
+        byte len = (byte) (plateNo.length() + 3);
+        buff.put(len);
+        buff.put(plateNo);
+        List<String> dateValues = getTime(time);
+        if (dateValues != null){
+            buff.putShort(Short.valueOf(dateValues.get(0)));
+            buff.put(Byte.valueOf(dateValues.get(1)));
+            buff.put(Byte.valueOf(dateValues.get(2)));
+            buff.put(Integer.valueOf(dateValues.get(3)));
+        }
+        buff.put((int) (latitude*1000000));
+        buff.put((int) (longitude*1000000));
+        buff.put(altitude);
+        buff.putShort(speed);
+        buff.putShort(course);
+        buff.put((int)mileage);
+        buff.put((long) status);
+        buff.put((long)alarmFlag);
+        buff.put((byte) type);
+
+        //  System.out.println("["+time.toString()+"] "+ plateNo +": "+latitude +"-"+longitude);
+        //System.out.println(toString());
+
+        return buff.array();
+    }
+
+    @Override
+    public String toString() {
+        return "GpsMessage{" +
+                "code=" + code +
+                ", plateNo='" + plateNo + '\'' +
+                ", time=" + time +
+                ", longitude=" + longitude +
+                ", latitude=" + latitude +
+                ", altitude=" + altitude +
+                ", speed=" + speed +
+                ", course=" + course +
+                ", mileage=" + mileage +
+                ", status=" + status +
+                ", alarmFlag=" + alarmFlag +
+                ", type=" + type +
+                '}';
     }
 
     /**
@@ -375,6 +449,13 @@ public class GpsMessage {
         byte[] test =ByteUtil.hexStrToBytes("0D AF 0D C3 F6 42 30 33 30 33 30 44 BB C6 C2 CC 07 E3 07 11 03 AE 89 10 07 13 0E 3A 01 82 F5 46 00 00 00 4E 00 11 00 F2 00 01 0D 6D 00 00 00 00 00 04 00 03 00 00 00 00 00 00 00 00 63 A1 7E");
         GpsMessage gpsMessage = new GpsMessage();
         gpsMessage.readFromBytes(test);
+        System.out.println(gpsMessage);
+
+        byte [] test1 = gpsMessage.WriteToBytes();
+        GpsMessage gpsMessage1 = new GpsMessage();
+        gpsMessage1.readFromBytes(test1);
+        System.out.println(gpsMessage1);
+
     }
 
 }
